@@ -23,7 +23,7 @@ unless config.has_key?(:app_name)
   config[:scopes] = []
   %w{read write follow}.each do |scope|
     if cli.agree "App requires #{scope} scope? [y/n] "
-      scopes << scope
+      config[:scopes] << scope
     end
   end
 end
