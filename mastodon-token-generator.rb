@@ -3,7 +3,8 @@
 require 'mastodon'
 require 'highline'
 require 'yaml'
-require 'oauth2'
+require 'rest-client'
+require 'json'
 require 'pp'
 
 config_yaml = (ARGV.length == 1) ? ARGV[0] : '.secrets.yml'
@@ -45,14 +46,18 @@ unless (config.has_key?(:client_id) && config.has_key?(:client_secret))
   $stderr.puts "Initial config written to #{config_yaml}"
 end
 
-oauth_client = OAuth2::Client.new(config[:client_id], config[:client_secret], :site => config[:mastodon_instance])
+# oauth_client = OAuth2::Client.new(config[:client_id], config[:client_secret], :site => config[:mastodon_instance])
 
 $stderr.puts "Authenticating app with OAuth flow to a Mastodon account in order to obtain an OAuth access token. Username and password will not be stored."
 
 username = cli.ask("Mastodon account username (email address): ")
 password = cli.ask("Mastodon account password: ") { |q| q.echo = "x" }
 
-config[:access_token] = oauth_client.password.get_token(username, password).token
+oauth_response = RestClient.post "#{config[:mastodon_instance]}/oauth/token", {client_id: config[:client_id], client_secret: config[:client_secret], grant_type: 'password', username: username, password: password}
+
+# pp JSON.parse(oauth_response.body)
+
+config[:access_token] = JSON.parse(oauth_response.body)['access_token'] # oauth_client.password.get_token(username, password).token
 pp config[:access_token]
 File.open(config_yaml,'w') do |f|
   f.write(YAML.dump(config))
