@@ -33,12 +33,15 @@ unless config.has_key?(:mastodon_instance)
   config[:mastodon_instance] = cli.ask("Mastodon instance domain (e.g. https://mastodon.social): ").chomp('/')
 end
 
-mastodon_client = Mastodon::REST::Client.new(base_url: config[:mastodon_instance])
+# mastodon_client = Mastodon::REST::Client.new(base_url: config[:mastodon_instance])
 
 unless (config.has_key?(:client_id) && config.has_key?(:client_secret))
-  mastodon_app = mastodon_client.create_app(config[:app_name], config[:redirect_uri], config[:scopes].join(' '), config[:website])
-  config[:client_id] = mastodon_app.client_id
-  config[:client_secret] = mastodon_app.client_secret
+  response = RestClient.post "#{config[:mastodon_instance]}/api/v1/apps", {client_name: config[:app_name], redirect_uris: config[:redirect_uri], scopes: config[:scopes].join(' '), website: config[:website]}
+  mastodon_app = JSON.parse(response.body)
+  pp mastodon_app
+  # mastodon_app = mastodon_client.create_app(config[:app_name], config[:redirect_uri], config[:scopes].join(' '), config[:website])
+  config[:client_id] = mastodon_app['client_id']
+  config[:client_secret] = mastodon_app['client_secret']
   pp config
   File.open(config_yaml,'w') do |f|
     f.write(YAML.dump(config))
